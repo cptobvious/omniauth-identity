@@ -79,7 +79,7 @@ module OmniAuth
           return nil if self.id.nil?
           self.id.to_s
         else
-          raise NotImplementedError 
+          raise NotImplementedError
         end
       end
 

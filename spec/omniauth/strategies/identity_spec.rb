@@ -35,6 +35,23 @@ describe OmniAuth::Strategies::Identity do
       last_response.body.should be_include("<form")
     end
   end
+  
+  describe '#reset_password_phase' do
+    it 'should prompt for email address' do
+      get '/auth/identity/resetpassword'
+      last_response.body.should be_include('Reset password')
+    end
+    
+    it 'should display email sent notice' do
+      post '/auth/identity/resetpassword', :email => 'foo@bar.com'
+      last_response.body.should be_include('Reset information sent')
+    end
+    
+    it 'should prompt for new password' do
+      get '/auth/identity/resetpassword', :hash => 'abcdef0123456789'
+      last_response.body.should be_include('Enter new password')
+    end
+  end
 
   describe '#callback_phase' do
     let(:user){ mock(:uid => 'user1', :info => {'name' => 'Rockefeller'})}

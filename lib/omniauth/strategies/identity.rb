@@ -1,11 +1,13 @@
 module OmniAuth
   module Strategies
-    # The identity strategy allows you to provide simple internal 
+    # The identity strategy allows you to provide simple internal
     # user authentication using the same process flow that you
     # use for external OmniAuth providers.
     class Identity
       include OmniAuth::Strategy
-
+      include OmniAuth::Identity::Features::Resettable
+      include OmniAuth::Identity::Features::Confirmable
+      
       option :fields, [:name, :email]
       option :on_failed_registration, nil
 
@@ -17,7 +19,7 @@ module OmniAuth
           f.text_field 'Login', 'auth_key'
           f.password_field 'Password', 'password'
           f.html "<p align='center'><a href='#{registration_path}'>Create an Identity</a></p>"
-        end.to_response 
+        end.to_response
       end
 
       def callback_phase
@@ -32,6 +34,10 @@ module OmniAuth
           elsif request.post?
             registration_phase
           end
+        elsif on_reset_password_path?
+          reset_password_phase
+        elsif on_confirm_identity_path?
+          confirm_identity_phase
         else
           call_app!
         end
