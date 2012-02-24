@@ -83,6 +83,7 @@ module OmniAuth
             HTML
             f.password_field 'New Password', 'password'
             f.password_field 'Confirm Password', 'password_confirmation'
+            f.button 'Reset password'
           end.to_response
         end
         
