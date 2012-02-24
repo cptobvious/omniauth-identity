@@ -92,7 +92,7 @@ module OmniAuth
               :url => reset_password_path
             ) do |f|
               f.html <<-HTML
-                <p>Please follow the instruction we sent to #{request['email']}.</p>
+                <p>You can now login with your new credentials.</p>
               HTML
               f.button ''
             end.to_response

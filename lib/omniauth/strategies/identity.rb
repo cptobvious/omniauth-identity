@@ -22,7 +22,9 @@ module OmniAuth
         ) do |f|
           f.text_field 'Login', 'auth_key'
           f.password_field 'Password', 'password'
-          f.html "<p align='center'><a href='#{registration_path}'>Create an Identity</a></p>"
+          f.html <<-HTML
+            <p align='center'><a href='#{registration_path}'>Create an Identity</a></p>
+          HTML
         end.to_response
       end
 
@@ -38,19 +40,17 @@ module OmniAuth
           elsif request.post?
             registration_phase
           end
-        elsif options[:resettable]
-          if on_send_instructions_path?
-            if request.get?
-              email_form
-            elsif request.post?
-              send_instructions_phase
-            end
-          elsif on_reset_password_path?
-            if request.get?
-              new_password_form
-            elsif request.post?
-              reset_password_phase
-            end
+        elsif options[:resettable] && on_send_instructions_path?
+          if request.get?
+            email_form
+          elsif request.post?
+            send_instructions_phase
+          end
+        elsif options[:resettable] && on_reset_password_path?
+          if request.get?
+            new_password_form
+          elsif request.post?
+            reset_password_phase
           end
         elsif options[:confirmable] && on_confirm_identity_path?
           confirm_identity_phase
