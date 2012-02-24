@@ -5,12 +5,16 @@ module OmniAuth
     # use for external OmniAuth providers.
     class Identity
       include OmniAuth::Strategy
+      
       include OmniAuth::Identity::Features::Resettable
       include OmniAuth::Identity::Features::Confirmable
       
       option :fields, [:name, :email]
       option :on_failed_registration, nil
-
+      
+      option :resettable, false
+      option :confirmable, false
+      
       def request_phase
         OmniAuth::Form.build(
           :title => (options[:title] || "Identity Verification"),
@@ -34,9 +38,21 @@ module OmniAuth
           elsif request.post?
             registration_phase
           end
-        elsif on_reset_password_path?
-          reset_password_phase
-        elsif on_confirm_identity_path?
+        elsif options[:resettable]
+          if on_send_instructions_path?
+            if request.get?
+              email_form
+            elsif request.post?
+              send_instructions_phase
+            end
+          elsif on_reset_password_path?
+            if request.get?
+              new_password_form
+            elsif request.post?
+              reset_password_phase
+            end
+          end
+        elsif options[:confirmable] && on_confirm_identity_path?
           confirm_identity_phase
         else
           call_app!
@@ -57,6 +73,7 @@ module OmniAuth
         attributes = (options[:fields] + [:password, :password_confirmation]).inject({}){|h,k| h[k] = request[k.to_s]; h}
         @identity = model.create(attributes)
         if @identity.persisted?
+          # TODO: callback for :on_successful_registration with confirmation
           env['PATH_INFO'] = callback_path
           callback_phase
         else

@@ -11,7 +11,7 @@ describe OmniAuth::Strategies::Identity do
   # customize rack app for testing, if block is given, reverts to default
   # rack app after testing is done
   def set_app!(identity_options = {})
-    identity_options = {:model => MockIdentity}.merge(identity_options)
+    identity_options = {:model => MockIdentity, :resettable => true}.merge(identity_options)
     old_app = self.app
     self.app = Rack::Builder.app do
       use Rack::Session::Cookie
@@ -36,20 +36,65 @@ describe OmniAuth::Strategies::Identity do
     end
   end
   
-  describe '#reset_password_phase' do
+  describe '#send_instructions_phase' do
+    let(:user){ mock(:uid => 'user1', :info => {'email' => 'foo@bar.com'}, :password_digest => 'test')}
+    
     it 'should prompt for email address' do
-      get '/auth/identity/resetpassword'
+      get '/auth/identity/sendinstructions'
       last_response.body.should be_include('Reset password')
     end
     
-    it 'should display email sent notice' do
-      post '/auth/identity/resetpassword', :email => 'foo@bar.com'
-      last_response.body.should be_include('Reset information sent')
+    context 'with existing account' do
+      before do
+        MockIdentity.should_receive('locate').with('foo@bar.com').and_return(user)
+        post '/auth/identity/sendinstructions', :email => 'foo@bar.com'
+      end
+      
+      it 'should display email sent notice' do
+        last_response.body.should be_include('Reset information sent')
+      end
     end
     
-    it 'should prompt for new password' do
-      get '/auth/identity/resetpassword', :hash => 'abcdef0123456789'
+    context 'with non-existing account' do
+      before do
+        MockIdentity.should_receive('locate').with('foo@bar.com').and_return(nil)
+        post '/auth/identity/sendinstructions', :email => 'foo@bar.com'
+      end
+      
+      it 'should display an error' do
+        last_response.body.should be_include('Problem encountered')
+      end
+    end
+  end
+  
+  describe '#reset_password_phase' do
+    let(:user){ mock(:uid => 'user1', :info => {'email' => 'foo@bar.com'}, :password_digest => 'test', :password= => nil, :save => nil)}
+    
+    it 'should prompt for email address' do
+      get '/auth/identity/resetpassword', :hash => '098f6bcd4621d373cade4e832627b4f6', :email => 'foo@bar.com'
       last_response.body.should be_include('Enter new password')
+    end
+    
+    context 'with valid credentials' do
+      before do
+        MockIdentity.should_receive('locate').with('foo@bar.com').and_return(user)
+        post '/auth/identity/resetpassword', :hash => '098f6bcd4621d373cade4e832627b4f6', :email => 'foo@bar.com', :password => 'test', :password_confirmation => 'test'
+      end
+      
+      it 'should display success message' do
+        last_response.body.should be_include('Successfully resetted password')
+      end
+    end
+    
+    context 'with invalid credentials' do
+      before do
+        MockIdentity.should_receive('locate').with('foo@bar.com').and_return(user)
+        post '/auth/identity/resetpassword', :hash => 'foo', :email => 'foo@bar.com', :password => 'test', :password_confirmation => 'test'
+      end
+      
+      it 'should display an error' do
+        last_response.body.should be_include('Invalid information')
+      end
     end
   end
 
