@@ -2,19 +2,19 @@ require "digest/md5"
 
 # PHASES
 
-# 1. send_instructions_phase - Prompt for email address
+# 1. forgot_password_phase - Prompt for email address
 # 2. reset_password_phase - Prompt for new password
 
 module OmniAuth
   module Identity
     module Features
       module Resettable
-        def send_instructions_path
-          options[:send_instructions_path] || "#{path_prefix}/#{name}/sendinstructions"
+        def forgot_password_path
+          options[:forgot_password_path] || "#{path_prefix}/#{name}/forgotpassword"
         end
         
-        def on_send_instructions_path?
-          on_path?(send_instructions_path)
+        def on_forgot_password_path?
+          on_path?(forgot_password_path)
         end
         
         def reset_password_path
@@ -28,14 +28,14 @@ module OmniAuth
         def email_form
           OmniAuth::Form.build(
             :title => 'Reset Password',
-            :url => send_instructions_path
+            :url => forgot_password_path
           ) do |f|
             f.text_field 'Email address', 'email'
             f.button 'Reset password'
           end.to_response
         end
         
-        def send_instructions_phase
+        def forgot_password_phase
           # for now it's fixed on the users email as identification
           # TODO make dynamic
           @identity = model.locate(request['email'])
@@ -46,6 +46,12 @@ module OmniAuth
             
             # TODO: send email with email and hash in url
             
+            if options[:email_handler]
+              self.env[:hash] = hash
+              self.env[:email] = request['email']
+              options[:email_handler].call(self.env)
+            end
+            
             OmniAuth::Form.build(:title => 'Reset information sent') do |f|
               f.html <<-HTML
                 <p>Please follow the instruction we sent to #{request['email']}.</p>
@@ -55,11 +61,11 @@ module OmniAuth
           else
             OmniAuth::Form.build(
               :title => 'Problem encountered',
-              :url => send_instructions_path
+              :url => forgot_password_path
             ) do |f|
               f.html <<-HTML
                 <p>There was a problem with your request.</p>
-                <a href='#{send_instructions_path}'>Try again</a>
+                <a href='#{forgot_password_path}'>Try again</a>
               HTML
               f.button ''
             end.to_response

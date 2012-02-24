@@ -40,11 +40,11 @@ module OmniAuth
           elsif request.post?
             registration_phase
           end
-        elsif options[:resettable] && on_send_instructions_path?
+        elsif options[:resettable] && on_forgot_password_path?
           if request.get?
             email_form
           elsif request.post?
-            send_instructions_phase
+            forgot_password_phase
           end
         elsif options[:resettable] && on_reset_password_path?
           if request.get?

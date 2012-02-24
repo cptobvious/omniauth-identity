@@ -36,18 +36,18 @@ describe OmniAuth::Strategies::Identity do
     end
   end
   
-  describe '#send_instructions_phase' do
+  describe '#forgot_password_phase' do
     let(:user){ mock(:uid => 'user1', :info => {'email' => 'foo@bar.com'}, :password_digest => 'test')}
     
     it 'should prompt for email address' do
-      get '/auth/identity/sendinstructions'
+      get '/auth/identity/forgotpassword'
       last_response.body.should be_include('Reset password')
     end
     
     context 'with existing account' do
       before do
         MockIdentity.should_receive('locate').with('foo@bar.com').and_return(user)
-        post '/auth/identity/sendinstructions', :email => 'foo@bar.com'
+        post '/auth/identity/forgotpassword', :email => 'foo@bar.com'
       end
       
       it 'should display email sent notice' do
@@ -58,7 +58,7 @@ describe OmniAuth::Strategies::Identity do
     context 'with non-existing account' do
       before do
         MockIdentity.should_receive('locate').with('foo@bar.com').and_return(nil)
-        post '/auth/identity/sendinstructions', :email => 'foo@bar.com'
+        post '/auth/identity/forgotpassword', :email => 'foo@bar.com'
       end
       
       it 'should display an error' do
