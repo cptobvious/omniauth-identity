@@ -1,5 +1,10 @@
 require "digest/md5"
 
+# PHASES
+
+# 1. send_instructions_phase - Prompt for email address
+# 2. reset_password_phase - Prompt for new password
+
 module OmniAuth
   module Identity
     module Features
@@ -20,14 +25,10 @@ module OmniAuth
           on_path?(reset_password_path)
         end
         
-        # PHASES
-        
-        # 1. send_instructions_phase - Prompt for email address
-        # 2. reset_password_phase - Prompt for new password
         def email_form
           OmniAuth::Form.build(
             :title => 'Reset Password',
-            :url => reset_password_path
+            :url => send_instructions_path
           ) do |f|
             f.text_field 'Email address', 'email'
             f.button 'Reset password'
@@ -35,10 +36,6 @@ module OmniAuth
         end
         
         def send_instructions_phase
-          # IMPORTANT: once password is resetted, people can still use their old
-          # password and after successful login, account will be resetted from
-          # the reset.
-          
           # for now it's fixed on the users email as identification
           # TODO make dynamic
           @identity = model.locate(request['email'])
@@ -56,9 +53,13 @@ module OmniAuth
               f.button ''
             end.to_response
           else
-            OmniAuth::Form.build(:title => 'Problem encountered') do |f|
+            OmniAuth::Form.build(
+              :title => 'Problem encountered',
+              :url => send_instructions_path
+            ) do |f|
               f.html <<-HTML
                 <p>There was a problem with your request.</p>
+                <a href='#{send_instructions_path}'>Try again</a>
               HTML
               f.button ''
             end.to_response
